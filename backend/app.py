@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 
 app = Flask(__name__)
 CORS(app)
@@ -48,6 +49,18 @@ def delete_task(id):
     db.session.delete(task)
     db.session.commit()
     return jsonify({"message": "Deleted"})
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "healthy"}), 200
+
+@app.route('/ready', methods=['GET'])
+def ready_check():
+    try:
+        db.session.execute(text('SELECT 1'))
+        return jsonify({"status": "ready", "database": "connected"}), 200
+    except Exception as e:
+        return jsonify({"status": "not ready", "database": "disconnected"}), 503
 
 if __name__ == '__main__':
     with app.app_context():
