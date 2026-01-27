@@ -50,7 +50,7 @@ def toggle_task(id):
 
 @app.route('/tasks/<int:id>', methods=['DELETE'])
 def delete_task(id):
-    task = Task.query.get(id)
+    task = db.session.get(Task, id)
     if not task:
         return jsonify({"error": "Not found"}), 404
     db.session.delete(task)
