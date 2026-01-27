@@ -26,12 +26,15 @@ class Task(db.Model):
     def to_dict(self):
         return {"id": self.id, "title": self.title, "done": self.done}
 
-@app.route('/tasks', methods=['GET'])
+with app.app_context():
+    db.create_all()
+
+@app.route('/api/tasks', methods=['GET'])
 def get_tasks():
     tasks = Task.query.all()
     return jsonify([t.to_dict() for t in tasks])
 
-@app.route('/tasks', methods=['POST'])
+@app.route('/api/tasks', methods=['POST'])
 def add_task():
     data = request.get_json()
     task = Task(title=data['title'])
@@ -39,7 +42,7 @@ def add_task():
     db.session.commit()
     return jsonify(task.to_dict()), 201
 
-@app.route('/tasks/<int:id>', methods=['PATCH'])
+@app.route('/api/tasks/<int:id>', methods=['PATCH'])
 def toggle_task(id):
     task = Task.query.get(id)
     if not task:
@@ -48,7 +51,7 @@ def toggle_task(id):
     db.session.commit()
     return jsonify(task.to_dict())
 
-@app.route('/tasks/<int:id>', methods=['DELETE'])
+@app.route('/api/tasks/<int:id>', methods=['DELETE'])
 def delete_task(id):
     task = db.session.get(Task, id)
     if not task:
@@ -57,11 +60,11 @@ def delete_task(id):
     db.session.commit()
     return jsonify({"message": "Deleted"})
 
-@app.route('/health', methods=['GET'])
+@app.route('/api/health', methods=['GET'])
 def health_check():
     return jsonify({"status": "healthy"}), 200
 
-@app.route('/ready', methods=['GET'])
+@app.route('/api/ready', methods=['GET'])
 def ready_check():
     try:
         db.session.execute(text('SELECT 1'))

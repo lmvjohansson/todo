@@ -7,14 +7,14 @@ export default function TodoApp() {
     const [tasks, setTasks] = useState([]);
 
     useEffect(() => {
-        fetch("http://localhost:5000/tasks")
+        fetch("/api/tasks")
             .then(res => res.json())
             .then(data => setTasks(data.map(t => new Task(t.id, t.title, t.done))))
             .catch(console.error);
     }, []);
 
     const toggleTask = (id) => {
-        fetch(`http://localhost:5000/tasks/${id}`, { method: "PATCH" })
+        fetch(`/api/tasks/${id}`, { method: "PATCH" })
             .then(res => res.json())
             .then(data => {
                 setTasks(tasks.map(task => task.id === data.id ? { ...task, done: data.done } : task));
@@ -23,7 +23,7 @@ export default function TodoApp() {
     };
 
     const addTask = (title) => {
-        fetch("http://localhost:5000/tasks", {
+        fetch("/api/tasks", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ title }),
@@ -34,7 +34,7 @@ export default function TodoApp() {
     };
 
     const removeTask = (id) => {
-        fetch(`http://localhost:5000/tasks/${id}`, { method: "DELETE" })
+        fetch(`/api/tasks/${id}`, { method: "DELETE" })
             .then(res => {
                 if (res.ok) {
                     setTasks(tasks.filter(task => task.id !== id));
