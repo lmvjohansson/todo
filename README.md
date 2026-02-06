@@ -1,38 +1,92 @@
-Learning Project – Python Backend and DevOps
+# Comparing Deployment Strategies on AWS – Bachelor's Thesis Project
 
-This repository is a personal learning project focused on developing a small full-stack web application to explore backend development with Python (Flask) and DevOps workflows.
+<div align="center">
 
+**KTH Royal Institute of Technology** | **Knightec Group**
 
-Purpose
+*January – June 2026*
 
-The main goal is to understand how to design, build, and deploy a backend system while gaining practical experience with modern development tools and practices.
-Key learning areas include:
+</div>
 
-Building a RESTful API using Flask and Python.
+---
 
-Connecting a backend to a database (PostgreSQL).
+## Working Title
 
-Structuring a frontend (React) to interact with the backend.
+<div align="center">
 
-Applying DevOps concepts such as containerization, CI/CD, and cloud deployment.
+### Comparing Blue-Green, Rolling, and Canary Deployment Strategies in Amazon Web Services: Impact on System Reliability, Resource Efficiency and Operational Complexity
 
-Technologies
+</div>
 
-Backend: Python (Flask)
+---
 
-Frontend: React (Vite)
+## Primary Research Question
 
-Database: PostgreSQL
+> *How do blue-green, rolling, and canary deployment strategies compare in terms of system reliability, resource efficiency and operational complexity when deploying containerized full-stack applications on AWS?*
 
-DevOps Tools: Docker (planned), GitHub Actions (planned)
+### Sub-Questions
 
-Version Control: Git and GitHub
+1. How does each deployment strategy perform during failure scenarios in terms of rollback speed and user impact? Specifically, when a deployed version contains critical errors, how quickly can each strategy revert to the stable version, and what percentage of users experience service degradation during the failure and recovery period?
+2. What are the infrastructure cost and operational complexity trade-offs between the three deployment approaches? This includes measuring AWS resource consumption, deployment duration, pipeline structure, and the degree of infrastructure and CI/CD (Continuous Integration and Continuous Deployment) configuration required to support each strategy.
 
-Current Status
+---
 
-Currently working on the frontend structure and preparing to integrate a Flask backend.
-The long-term goal is to containerize and deploy the application to a cloud environment as part of learning DevOps workflows.
+## Technical Stack
 
-Notes
+### Application
 
-This project is for educational purposes, with an emphasis on learning DevOps practices, backend programming in Python, and the process of connecting and deploying a full-stack system.
+- **Frontend:** React with Vite
+- **Backend:** Python Flask with SQLAlchemy
+- **Database:** PostgreSQL
+- **Containerization:** Docker & docker-compose
+
+### AWS Infrastructure
+
+| Service | Purpose |
+|---------|---------|
+| **ECS Fargate** | Container orchestration |
+| **Application Load Balancer** | Traffic management |
+| **RDS PostgreSQL** | Managed database |
+| **CloudWatch** | Monitoring, logging, and metrics |
+| **CodeDeploy** | Deployment automation |
+| **ECR** | Container image registry |
+
+### DevOps Tooling
+
+- **CI/CD:** GitHub Actions
+- **Infrastructure as Code:** Terraform
+- **Load Testing:** Locust or k6
+- **Version Control:** Git & GitHub
+
+---
+
+## Current Status
+
+### ✅ Completed
+- [x] Full-stack TODO application with comprehensive testing
+- [x] Docker containerization with proper networking
+- [x] CORS configuration and database integration
+- [x] Health endpoints (liveness and readiness checks)
+- [x] Literature review establishing research gap
+
+### 🚧 In Progress
+- [ ] Chapter 1 draft (Introduction)
+- [ ] AWS infrastructure setup with ECS Fargate
+- [ ] Terraform Infrastructure as Code implementation
+
+### 📋 Upcoming
+- [ ] CI/CD pipeline development with GitHub Actions
+- [ ] Implementation of three deployment strategies
+- [ ] Load testing framework
+- [ ] Failure scenario experimentation
+- [ ] Results analysis and thesis completion
+
+---
+
+<div align="center">
+
+*This project serves as both a demonstration of technical capabilities in cloud infrastructure and DevOps practices, and as a contribution to the empirical understanding of deployment strategies in production environments.*
+
+**[KTH Royal Institute of Technology](https://www.kth.se)** | **[Knightec Group](https://www.knightec.se)**
+
+</div>
