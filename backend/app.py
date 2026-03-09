@@ -3,15 +3,34 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 import os
+import boto3
+import json
 
 app = Flask(__name__)
 CORS(app)
 
-DB_USER = os.environ.get('DB_USER', 'postgres')
-DB_PASSWORD = os.environ.get('DB_PASSWORD', 'password')
-DB_HOST = os.environ.get('DB_HOST', 'localhost')
-DB_PORT = os.environ.get('DB_PORT', '5432')
-DB_NAME = os.environ.get('DB_NAME', 'todo_db')
+def get_secret():
+    secret_name = os.environ.get('SECRET_NAME')
+    region = os.environ.get('AWS_REGION', 'eu-north-1')
+    
+    client = boto3.client('secretsmanager', region_name=region)
+    response = client.get_secret_value(SecretId=secret_name)
+    return json.loads(response['SecretString'])
+
+secret_name = os.environ.get('SECRET_NAME')
+if secret_name:
+    credentials = get_secret()
+    DB_USER = credentials['username']
+    DB_PASSWORD = credentials['password']
+    DB_HOST = os.environ.get('DB_HOST')
+    DB_PORT = os.environ.get('DB_PORT', '5432')
+    DB_NAME = os.environ.get('DB_NAME', 'todo_db')
+else:
+    DB_USER = os.environ.get('DB_USER', 'postgres')
+    DB_PASSWORD = os.environ.get('DB_PASSWORD', 'password')
+    DB_HOST = os.environ.get('DB_HOST', 'localhost')
+    DB_PORT = os.environ.get('DB_PORT', '5432')
+    DB_NAME = os.environ.get('DB_NAME', 'todo_db')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
