@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import TodoApp from './containers/TodoApp.jsx'
 
 function App() {
