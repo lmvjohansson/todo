@@ -1,20 +1,15 @@
 # Comparing Deployment Strategies on AWS – Bachelor's Thesis Project
-
 <div align="center">
-
 **KTH Royal Institute of Technology** | **Knightec Group**
-
 *January – June 2026*
-
 </div>
 
 ---
 
 ## Working Title
-
 <div align="center">
 
-### Comparing Blue-Green, Rolling, and Canary Deployment Strategies in Amazon Web Services: Impact on System Reliability, Resource Efficiency and Operational Complexity
+### A Comparative Study of Deployment Strategies in Cloud Environments: Impact on Deployment Process Performance, Failure Response and Resource Efficiency
 
 </div>
 
@@ -22,19 +17,13 @@
 
 ## Primary Research Question
 
-> *How do blue-green, rolling, and canary deployment strategies compare in terms of system reliability, resource efficiency and operational complexity when deploying containerized full-stack applications on AWS?*
-
-### Sub-Questions
-
-1. How does each deployment strategy perform during failure scenarios in terms of rollback speed and user impact? Specifically, when a deployed version contains critical errors, how quickly can each strategy revert to the stable version, and what percentage of users experience service degradation during the failure and recovery period?
-2. What are the infrastructure cost and operational complexity trade-offs between the three deployment approaches? This includes measuring AWS resource consumption, deployment duration, pipeline structure, and the degree of infrastructure and CI/CD (Continuous Integration and Continuous Deployment) configuration required to support each strategy.
+> *How do blue-green, rolling, and canary deployment strategies compare in terms of deployment process performance, failure response and resource efficiency when deploying applications in a cloud environment?*
 
 ---
 
 ## Technical Stack
 
 ### Application
-
 - **Frontend:** React with Vite
 - **Backend:** Python Flask with SQLAlchemy
 - **Database:** PostgreSQL
@@ -52,10 +41,9 @@
 | **ECR** | Container image registry |
 
 ### DevOps Tooling
-
 - **CI/CD:** GitHub Actions
 - **Infrastructure as Code:** Terraform
-- **Load Testing:** Locust or k6
+- **Load Testing:** k6
 - **Version Control:** Git & GitHub
 
 ---
@@ -68,18 +56,43 @@
 - [x] CORS configuration and database integration
 - [x] Health endpoints (liveness and readiness checks)
 - [x] Literature review establishing research gap
+- [x] AWS infrastructure setup with ECS Fargate (VPC, security groups, ALBs, ECR, ECS cluster, task definitions, services)
+- [x] Infrastructure as Code with Terraform (33 resources, fully reproducible with `terraform apply`)
+- [x] CI/CD pipeline with GitHub Actions (automated build, push to ECR, and rolling deployment on push to main)
+- [x] Thesis writing (Chapters 1–3)
 
 ### 🚧 In Progress
-- [ ] Chapter 1 draft (Introduction)
-- [ ] AWS infrastructure setup with ECS Fargate
-- [ ] Terraform Infrastructure as Code implementation
+- [ ] Thesis writing (Chapters 4-5)
+- [ ] Monitoring infrastructure (CloudWatch dashboards and alarms)
 
 ### 📋 Upcoming
-- [ ] CI/CD pipeline development with GitHub Actions
-- [ ] Implementation of three deployment strategies
-- [ ] Load testing framework
+- [ ] Implementation of three deployment strategies (rolling, blue-green, canary)
+- [ ] Load testing framework with k6
 - [ ] Failure scenario experimentation
 - [ ] Results analysis and thesis completion
+
+---
+
+## Infrastructure Overview
+
+The full AWS infrastructure is defined as Terraform code in the `terraform/` directory and can be reproduced with a single `terraform apply`. Key design decisions:
+
+- **RDS is excluded from Terraform** to prevent data loss on `terraform destroy`. The database endpoint and credentials are passed as input variables.
+- **Least-privilege security groups**: ECS tasks only accept traffic from their respective ALB, not directly from the internet.
+- **Two separate ALBs**: one for the backend service (load testing target) and one for the frontend.
+- Load testing with k6 targets the **backend service directly**, as the frontend is a static asset server not relevant to the deployment strategy metrics.
+
+## CI/CD Pipeline
+
+On every push to `main`, GitHub Actions automatically:
+
+1. Builds Docker images for both backend and frontend
+2. Tags images with both `:latest` and the git commit SHA
+3. Pushes images to ECR
+4. Downloads the current ECS task definition
+5. Deploys to ECS Fargate (rolling deployment)
+
+The backend and frontend are deployed in parallel as independent jobs.
 
 ---
 
