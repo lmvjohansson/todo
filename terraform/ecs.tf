@@ -37,6 +37,13 @@ resource "aws_ecs_task_definition" "todo_backend" {
           "awslogs-stream-prefix" = "ecs"
         }
       }
+      healthCheck = {
+        "command": ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/api/ready')\" || exit 1"],
+        "interval" : 30,
+        "retries" : 3,
+        "startPeriod" : 30,
+        "timeout" : 5
+      }
     }
   ])
 }
@@ -100,7 +107,7 @@ resource "aws_ecs_service" "todo_backend_service" {
   name            = "todo-backend-service"
   cluster         = aws_ecs_cluster.todo_cluster.id
   task_definition = aws_ecs_task_definition.todo_backend.arn
-  desired_count   = 2
+  desired_count   = 3
   launch_type     = "FARGATE"
 
   load_balancer {
