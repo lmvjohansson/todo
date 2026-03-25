@@ -5,6 +5,8 @@ from sqlalchemy import text
 import os
 import boto3
 import json
+import sys
+import time
 
 app = Flask(__name__)
 CORS(app)
@@ -31,6 +33,10 @@ else:
     DB_HOST = os.environ.get('DB_HOST', 'localhost')
     DB_PORT = os.environ.get('DB_PORT', '5432')
     DB_NAME = os.environ.get('DB_NAME', 'todo_db')
+    
+FAILURE_MODE = 'false'
+if FAILURE_MODE == 'crash':
+    sys.exit(1)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -85,6 +91,11 @@ def health_check():
 
 @app.route('/api/ready', methods=['GET'])
 def ready_check():
+    if FAILURE_MODE == 'health_fail':
+        return jsonify({"status": "not ready", "database": "disconnected"}), 503
+    if FAILURE_MODE == 'health_slow':
+        time.sleep(15)
+        return jsonify({"status": "ready", "database": "connected"}), 200
     try:
         db.session.execute(text('SELECT 1'))
         return jsonify({"status": "ready", "database": "connected"}), 200
