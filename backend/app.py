@@ -7,6 +7,7 @@ import boto3
 import json
 import sys
 import time
+import signal
 
 app = Flask(__name__)
 CORS(app)
@@ -34,9 +35,9 @@ else:
     DB_PORT = os.environ.get('DB_PORT', '5432')
     DB_NAME = os.environ.get('DB_NAME', 'todo_db')
     
-FAILURE_MODE = 'none'
+FAILURE_MODE = 'crash'
 if FAILURE_MODE == 'crash':
-    sys.exit(1)
+    os.kill(os.getppid(), signal.SIGTERM)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
