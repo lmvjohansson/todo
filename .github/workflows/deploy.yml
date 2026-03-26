@@ -9,6 +9,9 @@ jobs:
   deploy-backend:
     runs-on: ubuntu-latest
     steps:
+      - name: Record pipeline start time
+        run: echo "Pipeline started at $(TZ='Europe/Stockholm' date '+%H:%M:%S') Stockholm time"
+  
       - name: Checkout code
         uses: actions/checkout@v3
         
