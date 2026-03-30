@@ -1,14 +1,19 @@
 resource "aws_ecs_service" "todo_backend_service" {
-  name                  = "todo-backend-service"
-  cluster               = aws_ecs_cluster.todo_cluster.id
-  task_definition       = aws_ecs_task_definition.todo_backend.arn
-  desired_count         = 5
-  launch_type           = "FARGATE"
+  name            = "todo-backend-service"
+  cluster         = aws_ecs_cluster.todo_cluster.id
+  task_definition = aws_ecs_task_definition.todo_backend.arn
+  desired_count   = 5
+  launch_type     = "FARGATE"
   wait_for_steady_state = true
-
+  
   deployment_configuration {
-    strategy             = "BLUE_GREEN"
-    bake_time_in_minutes = 5
+    strategy             = "CANARY"
+    bake_time_in_minutes = 15
+
+    canary_configuration {
+      canary_percent              = 10.0
+      canary_bake_time_in_minutes = 5
+    }
   }
 
   load_balancer {
@@ -23,7 +28,7 @@ resource "aws_ecs_service" "todo_backend_service" {
       role_arn                   = aws_iam_role.ecs_alb_role.arn
     }
   }
-
+  
   network_configuration {
     assign_public_ip = true
     security_groups  = [aws_security_group.backend_ecs.id]
