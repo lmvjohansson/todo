@@ -1,8 +1,8 @@
 resource "aws_cloudwatch_metric_alarm" "backend_5xx" {
   alarm_name          = "todo-backend-5xx-errors"
   comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
-  datapoints_to_alarm = 2
+  evaluation_periods  = 1
+  datapoints_to_alarm = 1
   metric_name         = "HTTPCode_Target_5XX_Count"
   namespace           = "AWS/ApplicationELB"
   period              = 60
