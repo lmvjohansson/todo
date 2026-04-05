@@ -8,6 +8,7 @@ import json
 import sys
 import time
 import signal
+import random
 
 app = Flask(__name__)
 CORS(app)
@@ -35,7 +36,7 @@ else:
     DB_PORT = os.environ.get('DB_PORT', '5432')
     DB_NAME = os.environ.get('DB_NAME', 'todo_db')
     
-FAILURE_MODE = 'none'
+FAILURE_MODE = 'application_error'
 if FAILURE_MODE == 'crash':
     os.kill(os.getppid(), signal.SIGTERM)
 
@@ -57,6 +58,11 @@ with app.app_context():
 
 @app.route('/api/tasks', methods=['GET'])
 def get_tasks():
+    if FAILURE_MODE == 'application_error':
+        failure_threshold = 0.8
+        random_value = random.random()
+        if random_value > failure_threshold:
+            return jsonify({"error": "application not responding"}), 500
     tasks = Task.query.all()
     return jsonify([t.to_dict() for t in tasks])
 
