@@ -309,10 +309,6 @@ def compute_baseline_metrics(buckets, baseline_end, baseline_duration_seconds=12
 # ── Cost metrics ──────────────────────────────────────────────────────────────
 
 def fetch_last_log_event(logs_client, log_group, stream_name):
-    """
-    Fetch the last log event from a stream.
-    Returns (message, timestamp_ms) tuple, or (None, None) if no events found.
-    """
     response = logs_client.get_log_events(
         logGroupName=log_group,
         logStreamName=stream_name,
@@ -321,7 +317,9 @@ def fetch_last_log_event(logs_client, log_group, stream_name):
     )
     events = response.get('events', [])
     if not events:
+        print(f"    DEBUG fetch_last: no events for {stream_name[-20:]}")
         return None, None
+    print(f"    DEBUG fetch_last: {stream_name[-20:]} -> '{events[0]['message'][:60]}'")
     return events[0]['message'], events[0]['timestamp']
 
 
@@ -363,11 +361,15 @@ def fetch_log_streams_in_window(profile, window_start, window_end, log_group='/e
             first_dt = datetime.fromtimestamp(first / 1000, tz=timezone.utc)
 
             last_msg, last_ts_ms = fetch_last_log_event(logs, log_group, stream['logStreamName'])
-            if last_msg and 'Shutting down: Master' in last_msg:
+            if last_msg is None:
+                continue
+            elif 'Shutting down: Master' in last_msg:
                 last_dt = datetime.fromtimestamp(last_ts_ms / 1000, tz=timezone.utc)
             else:
-                # Task was still running — use window_end as its end time
                 last_dt = window_end
+                
+            if last_dt <= window_start:
+                continue
 
             streams.append({
                 'name':  stream['logStreamName'],
