@@ -20,8 +20,8 @@ Arguments:
     --strategy        Deployment strategy: rolling, blue-green, canary
     --condition       Test condition: success, failure
     --k6-file         Path to k6 JSON output file
-    --pipeline-start  Time pipeline was triggered, HH:MM:SS (UTC+1, Stockholm time)
-    --failure-mode    Failure mode: none, crash, health_fail, health_slow (default: none)
+    --pipeline-start  Time pipeline was triggered, HH:MM:SS (Stockholm time)
+    --failure-mode    Failure mode: none, crash, health_fail, health_slow, application_error (default: none)
     --profile         AWS CLI profile (default: knightec)
     --output          Output CSV file (default: experiment_results.csv)
     --baseline-error  Error rate threshold for MTTR calculation in % (default: 1.0)
@@ -82,7 +82,7 @@ def fetch_ecs_events(profile, cluster='todo-cluster', service='todo-backend-serv
     return response['services'][0]['events']
 
 
-def parse_ecs_timing_from_events(events, pipeline_start, condition):
+def parse_ecs_timing_from_events(events, pipeline_start, condition, failure_mode='none'):
     """
     Derive all deployment timing from the ECS events log.
 
@@ -96,7 +96,8 @@ def parse_ecs_timing_from_events(events, pipeline_start, condition):
 
     Failure:
         ecs_start       first task started after pipeline trigger
-        detection_time  'rolling back' event, or first 'deregistered' after ecs_start
+        detection_time  for application_error: 'alarm detected' or 'rolling back'
+                        for other failure modes: 'rolling back' or first 'deregistered'
         rollback_end    'reached a steady state' after detection_time
     """
     pipeline_epoch = pipeline_start.timestamp()
@@ -107,7 +108,6 @@ def parse_ecs_timing_from_events(events, pipeline_start, condition):
     detection_time = None
     rollback_end = None
 
-    # Find ecs_start: first 'has started' event within 15 minutes of pipeline trigger
     for event in sorted_events:
         ts = event['createdAt'].astimezone(timezone.utc)
         msg = event['message']
@@ -127,7 +127,6 @@ def parse_ecs_timing_from_events(events, pipeline_start, condition):
             'rollback_end': None,
         }
 
-    # Scan events after ecs_start for timing markers
     for event in sorted_events:
         ts = event['createdAt'].astimezone(timezone.utc)
         msg = event['message']
@@ -142,10 +141,13 @@ def parse_ecs_timing_from_events(events, pipeline_start, condition):
             rollback_end = ts
 
         if condition == 'failure':
+            if detection_time is None and 'alarm detected' in msg:
+                detection_time = ts
             if detection_time is None and 'rolling back' in msg:
                 detection_time = ts
-
-            if detection_time is None and 'deregistered' in msg:
+            # For application_error, 'deregistered' fires during normal rolling replacement
+            # before the alarm fires — only use it for health check failure modes
+            if detection_time is None and failure_mode != 'application_error' and 'deregistered' in msg:
                 detection_time = ts
 
     return {
@@ -309,6 +311,10 @@ def compute_baseline_metrics(buckets, baseline_end, baseline_duration_seconds=12
 # ── Cost metrics ──────────────────────────────────────────────────────────────
 
 def fetch_last_log_event(logs_client, log_group, stream_name):
+    """
+    Fetch the last log event from a stream.
+    Returns (message, timestamp_ms) tuple, or (None, None) if no events found.
+    """
     response = logs_client.get_log_events(
         logGroupName=log_group,
         logStreamName=stream_name,
@@ -317,9 +323,7 @@ def fetch_last_log_event(logs_client, log_group, stream_name):
     )
     events = response.get('events', [])
     if not events:
-        print(f"    DEBUG fetch_last: no events for {stream_name[-20:]}")
         return None, None
-    print(f"    DEBUG fetch_last: {stream_name[-20:]} -> '{events[0]['message'][:60]}'")
     return events[0]['message'], events[0]['timestamp']
 
 
@@ -350,11 +354,9 @@ def fetch_log_streams_in_window(profile, window_start, window_end, log_group='/e
             if first == 0 and last == 0:
                 continue
 
-            # Skip streams that started after the window ended
             if first >= window_end_ms:
                 continue
 
-            # Stop paginating if stream started more than 24h before window
             if first < window_start_ms - (24 * 3600 * 1000):
                 break
 
@@ -367,7 +369,7 @@ def fetch_log_streams_in_window(profile, window_start, window_end, log_group='/e
                 last_dt = datetime.fromtimestamp(last_ts_ms / 1000, tz=timezone.utc)
             else:
                 last_dt = window_end
-                
+
             if last_dt <= window_start:
                 continue
 
@@ -396,35 +398,26 @@ def compute_cost_metrics(streams, window_start, window_end, baseline_tasks=5):
         extra_task_seconds   -- task-seconds above baseline
         estimated_cost_usd   -- extra_task_seconds x Fargate per-second rate
     """
-    # Fargate pricing: 0.5 vCPU, 1GB memory (eu-north-1, Linux x86)
     VCPU_COST_PER_SECOND   = 0.0445 / 3600 * 0.5
     MEMORY_COST_PER_SECOND = 0.0049 / 3600 * 1.0
     TASK_COST_PER_SECOND   = VCPU_COST_PER_SECOND + MEMORY_COST_PER_SECOND
 
     window_duration = (window_end - window_start).total_seconds()
-    print(f"  Window: {fmt(window_start)} -> {fmt(window_end)} ({window_duration}s)")
-    print(f"  Baseline: {baseline_tasks} tasks x {window_duration}s = {baseline_tasks * window_duration}s")
 
     actual_task_seconds = 0.0
     for stream in streams:
         task_start = max(stream['first'], window_start)
         task_end   = min(stream['last'],  window_end)
 
-        # Skip streams that don't actually overlap with the window
         if task_end <= task_start:
             continue
 
         overlap = (task_end - task_start).total_seconds()
         actual_task_seconds += overlap
-        print(f"  {stream['name'][-20:]}  {fmt(task_start)} -> {fmt(task_end)}  overlap={overlap}s")
 
     baseline_task_seconds = baseline_tasks * window_duration
     extra_task_seconds    = max(0.0, actual_task_seconds - baseline_task_seconds)
     estimated_cost_usd    = extra_task_seconds * TASK_COST_PER_SECOND
-
-    print(f"  Total actual task-seconds: {actual_task_seconds}s")
-    print(f"  Baseline task-seconds:     {baseline_task_seconds}s")
-    print(f"  Extra task-seconds:        {extra_task_seconds}s")
 
     return {
         'extra_task_seconds':  round(extra_task_seconds, 1),
@@ -502,7 +495,7 @@ def main():
 
     print("\nQuerying ECS service events...")
     events = fetch_ecs_events(args.profile)
-    timing = parse_ecs_timing_from_events(events, pipeline_start, args.condition)
+    timing = parse_ecs_timing_from_events(events, pipeline_start, args.condition, args.failure_mode)
 
     ecs_start = timing['ecs_start']
     ecs_end = timing['ecs_end']
@@ -583,8 +576,6 @@ def main():
     if rollback_end is not None:
         cost_window_end = rollback_end + timedelta(minutes=10)
         streams = fetch_log_streams_in_window(args.profile, ecs_start, cost_window_end)
-        for s in streams:
-            print(f"  Stream: {s['name'][-20:]}  first={fmt(s['first'])}  last={fmt(s['last'])}")
         print(f"  Found {len(streams)} log streams active during deployment window")
         cost = compute_cost_metrics(streams, ecs_start, cost_window_end)
         extra_task_seconds = cost['extra_task_seconds']
