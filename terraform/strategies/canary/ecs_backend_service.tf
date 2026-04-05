@@ -8,11 +8,11 @@ resource "aws_ecs_service" "todo_backend_service" {
   
   deployment_configuration {
     strategy             = "CANARY"
-    bake_time_in_minutes = 15
+    bake_time_in_minutes = 5
 
     canary_configuration {
       canary_percent              = 10.0
-      canary_bake_time_in_minutes = 5
+      canary_bake_time_in_minutes = 3
     }
   }
 
@@ -33,5 +33,11 @@ resource "aws_ecs_service" "todo_backend_service" {
     assign_public_ip = true
     security_groups  = [aws_security_group.backend_ecs.id]
     subnets          = data.aws_subnets.default.ids
+  }
+  
+  alarms {
+    enable      = true
+    rollback    = true
+    alarm_names = [aws_cloudwatch_metric_alarm.backend_5xx.alarm_name]
   }
 }

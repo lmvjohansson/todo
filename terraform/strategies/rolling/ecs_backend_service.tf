@@ -21,4 +21,10 @@ resource "aws_ecs_service" "todo_backend_service" {
     security_groups  = [aws_security_group.backend_ecs.id]
     subnets          = data.aws_subnets.default.ids
   }
+  
+  alarms {
+    enable      = true
+    rollback    = true
+    alarm_names = [aws_cloudwatch_metric_alarm.backend_5xx.alarm_name]
+  }
 }
