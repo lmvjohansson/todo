@@ -5,11 +5,6 @@ resource "aws_ecs_service" "todo_backend_service" {
   desired_count   = 5
   launch_type     = "FARGATE"
   
-  deployment_configuration { 
-    strategy = "ROLLING" 
-    bake_time_in_minutes = 5 
-  }
-  
   deployment_circuit_breaker {
     enable   = true
     rollback = true
