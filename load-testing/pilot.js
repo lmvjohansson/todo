@@ -7,7 +7,7 @@ export const options = {
 };
 
 export default function () {
-    const res = http.get('http://todo-backend-alb-1874524542.eu-north-1.elb.amazonaws.com');
+    const res = http.get('http://todo-backend-alb-1874524542.eu-north-1.elb.amazonaws.com/api/tasks');
     check(res, {
         'status is 200': (r) => r.status === 200,
     });
