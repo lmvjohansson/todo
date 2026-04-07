@@ -10,6 +10,11 @@ resource "aws_ecs_service" "todo_backend_service" {
     strategy             = "BLUE_GREEN"
     bake_time_in_minutes = 5
   }
+  
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
 
   load_balancer {
     target_group_arn = aws_lb_target_group.todo_backend_tg.arn

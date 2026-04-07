@@ -15,6 +15,11 @@ resource "aws_ecs_service" "todo_backend_service" {
       canary_bake_time_in_minutes = 3
     }
   }
+  
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
 
   load_balancer {
     target_group_arn = aws_lb_target_group.todo_backend_tg.arn
