@@ -358,7 +358,7 @@ def fetch_log_streams_in_window(profile, window_start, window_end, log_group='/e
                 continue
 
             if first < window_start_ms - (24 * 3600 * 1000):
-                break
+                continue
 
             first_dt = datetime.fromtimestamp(first / 1000, tz=timezone.utc)
 
