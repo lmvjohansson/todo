@@ -36,7 +36,7 @@ else:
     DB_PORT = os.environ.get('DB_PORT', '5432')
     DB_NAME = os.environ.get('DB_NAME', 'todo_db')
     
-FAILURE_MODE = 'application_error'
+FAILURE_MODE = 'none'
 if FAILURE_MODE == 'crash':
     os.kill(os.getppid(), signal.SIGTERM)
 
@@ -100,9 +100,6 @@ def health_check():
 def ready_check():
     if FAILURE_MODE == 'health_fail':
         return jsonify({"status": "not ready", "database": "disconnected"}), 503
-    if FAILURE_MODE == 'health_slow':
-        time.sleep(15)
-        return jsonify({"status": "ready", "database": "connected"}), 200
     try:
         db.session.execute(text('SELECT 1'))
         return jsonify({"status": "ready", "database": "connected"}), 200
