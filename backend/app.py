@@ -36,7 +36,7 @@ else:
     DB_PORT = os.environ.get('DB_PORT', '5432')
     DB_NAME = os.environ.get('DB_NAME', 'todo_db')
     
-FAILURE_MODE = 'none'
+FAILURE_MODE = 'crash'
 if FAILURE_MODE == 'crash':
     os.kill(os.getppid(), signal.SIGTERM)
 
