@@ -16,7 +16,7 @@ resource "aws_lb_target_group" "todo_backend_tg" {
   vpc_id      = data.aws_vpc.default.id
 
   health_check {
-    path      = "/api/health"
+    path      = "/api/ready"
     protocol  = "HTTP"
     matcher   = "200"
   }
@@ -30,7 +30,7 @@ resource "aws_lb_target_group" "todo_backend_tg_green" {
   vpc_id      = data.aws_vpc.default.id
 
   health_check {
-    path      = "/api/health"
+    path      = "/api/ready"
     protocol  = "HTTP"
     matcher   = "200"
   }
