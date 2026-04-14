@@ -378,6 +378,7 @@ def fetch_log_streams_in_window(profile, window_start, window_end, log_group='/e
                 'first': first_dt,
                 'last':  last_dt,
             })
+            print(f"    Stream: {stream['logStreamName'][-32:]}  first={fmt(first_dt)}  last={fmt(last_dt)}")
 
         if 'nextToken' not in page:
             break
