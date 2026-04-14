@@ -36,7 +36,7 @@ else:
     DB_PORT = os.environ.get('DB_PORT', '5432')
     DB_NAME = os.environ.get('DB_NAME', 'todo_db')
     
-FAILURE_MODE = 'none'
+FAILURE_MODE = 'health_fail'
 if FAILURE_MODE == 'crash':
     os.kill(os.getppid(), signal.SIGTERM)
 
@@ -58,6 +58,8 @@ with app.app_context():
 
 @app.route('/api/tasks', methods=['GET'])
 def get_tasks():
+    if FAILURE_MODE == 'health_fail':
+        return jsonify({"error": "application not responding"}), 500
     if FAILURE_MODE == 'application_error':
         failure_threshold = 0.8
         random_value = random.random()
@@ -91,10 +93,6 @@ def delete_task(id):
     db.session.delete(task)
     db.session.commit()
     return jsonify({"message": "Deleted"})
-
-@app.route('/api/health', methods=['GET'])
-def health_check():
-    return jsonify({"status": "healthy"}), 200
 
 @app.route('/api/ready', methods=['GET'])
 def ready_check():
